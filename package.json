@@ -1,0 +1,33 @@
+{
+  "name": "@mongez/atom",
+  "version": "2.0.0",
+  "description": "An agnostic state management tool that work with any framework on browser or server",
+  "main": "src/index.ts",
+  "author": "hassanzohdy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hassanzohdy/atom"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@mongez/events": "^2.1.0",
+    "@mongez/reinforcements": "^2.3.10"
+  },
+  "keywords": [
+    "react",
+    "state",
+    "atom",
+    "state management",
+    "state management tool",
+    "state management library",
+    "recoil",
+    "Jotai",
+    "redux",
+    "angular",
+    "svelte",
+    "vue",
+    "astro",
+    "qwik",
+    "state management library for react"
+  ]
+}

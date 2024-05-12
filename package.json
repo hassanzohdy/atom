@@ -1,6 +1,6 @@
 {
     "name": "@mongez/atom",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "An agnostic state management tool that work with any framework on browser or server",
     "main": "src/index.ts",
     "author": "hassanzohdy",

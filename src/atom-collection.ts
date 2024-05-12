@@ -72,7 +72,7 @@ interface AtomCollectionActions<Value> extends AtomActions<Value[]> {
 
 export type CollectionOptions<Value> = Omit<
   AtomOptions<Value[], AtomCollectionActions<Value>>,
-  'actions' | 'default'
+  'default'
 > & {
   default?: Value[];
 };
@@ -87,6 +87,7 @@ export function atomCollection<Value = any>(
     key: options.key,
     default: options.default ?? [],
     actions: {
+      ...options.actions,
       push(...items: Value[]) {
         this.update([...this.currentValue, ...items]);
       },

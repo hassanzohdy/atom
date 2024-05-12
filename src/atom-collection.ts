@@ -5,7 +5,7 @@ export type IndexOrCallback<Value> =
   | number
   | ((value: Value, index: number, list: Value[]) => boolean);
 
-interface AtomCollectionActions<Value> extends AtomActions<Value[]> {
+export interface AtomCollectionActions<Value> extends AtomActions<Value[]> {
   /**
    * Add items to the end of the array
    */

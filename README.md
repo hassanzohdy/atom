@@ -9,12 +9,13 @@ The main purpose of the birth of this package is to work with a simple and perfo
 ## Features
 
 - Simple and easy to use
+- Won't take more than few minutes to **master it**.
 - Can be used outside components.
 - Listen to atom's value change.
 - Listen to atom's object property change.
 - Lightweight in size.
 - Easy Managing Objects, Arrays, and booleans.
-- Open for extending using Atom Actions.
+- Open for Extension using Atom Actions.
 
 ## React Atom
 

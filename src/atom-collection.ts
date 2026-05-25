@@ -31,9 +31,9 @@ export interface AtomCollectionActions<Value> extends AtomActions<Value[]> {
    */
   removeItem(this: Atom<Value[]>, item: Value): void;
   /**
-   * Remove all items from array by value
+   * Remove all occurrences of an item from the array
    */
-  removeAll(this: Atom<Value[]>, item: Value): Value[];
+  removeAll(this: Atom<Value[]>, item: Value): void;
   /**
    * Get item from array either by index or callback
    */
@@ -121,7 +121,7 @@ export function atomCollection<Value = any>(
         this.update([...this.value]);
       },
       removeAll(item: Value) {
-        return this.value.filter((value) => value !== item);
+        this.update(this.value.filter((value) => value !== item));
       },
       get(indexOrCallback: IndexOrCallback<Value>) {
         const index: number =

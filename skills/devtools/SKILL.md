@@ -1,0 +1,59 @@
+---
+name: mongez-atom-devtools
+description: How to enable Redux DevTools integration for @mongez/atom — setup, options, time-travel, and filtering high-frequency atoms.
+when_to_use: |
+  - User imports or calls enableAtomDevtools from @mongez/atom
+  - User asks how to connect @mongez/atom to Redux DevTools
+  - User asks about time-travel debugging for atom state
+  - User asks about ignoring or filtering atoms from the DevTools timeline
+  - User asks about the scanInterval option for lazily-registered atoms
+---
+
+# Devtools
+
+`enableAtomDevtools()` pipes every atom update into the Redux DevTools browser extension. Opt-in, browser-only, tree-shaken when not imported.
+
+## Usage
+
+```ts
+import { enableAtomDevtools } from "@mongez/atom";
+
+if (process.env.NODE_ENV !== "production") {
+  enableAtomDevtools({ name: "MyApp" });
+}
+```
+
+## Options
+
+```ts
+type EnableDevtoolsOptions = {
+  name?: string;                            // label shown in DevTools UI
+  ignore?: Array<RegExp | string>;          // skip atoms whose key matches
+  scanInterval?: number;                    // ms between scans for newly-registered atoms; default 1000
+};
+```
+
+The returned function tears down all subscriptions and disconnects the extension. Call it on hot-reload or test teardown if needed.
+
+## What you get
+
+- **Initial snapshot.** Every atom registered at call time is `init`-ed into the timeline.
+- **Update timeline.** Every `atom.update`, `change`, `merge` produces an entry typed as `${atomKey}/update` with the new value as payload.
+- **Reset / destroy entries.** Lifecycle events show up as `${atomKey}/reset` and `${atomKey}/destroy`.
+- **Time-travel.** Jumping back in the DevTools timeline restores every atom's value via `silentUpdate` + a synthetic update event so React subscribers re-render.
+
+## Ignoring high-frequency atoms
+
+```ts
+enableAtomDevtools({
+  ignore: [
+    /^mouse\./,        // every mouse atom
+    /^scroll\./,
+    "perf.heartbeat",  // exact string match
+  ],
+});
+```
+
+## Catching late-registered atoms
+
+Apps that lazy-load routes register atoms after `enableAtomDevtools` fires. A polling scan picks them up — defaults to 1s. Tune via `scanInterval` if you want faster discovery or less wakeup.

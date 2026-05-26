@@ -1,6 +1,6 @@
 {
   "name": "@mongez/atom",
-  "version": "6.0.7",
+  "version": "6.0.8",
   "description": "An agnostic state management tool that work with any framework on browser or server",
   "main": "src/index.ts",
   "author": "hassanzohdy",
@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@mongez/events": "^2.1.0",
+    "@mongez/events": "^2.2.0",
     "@mongez/reinforcements": "^3.1.0"
   },
   "devDependencies": {

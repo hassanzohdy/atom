@@ -1,12 +1,9 @@
 ---
 name: mongez-atom-atom-store
-description: How to use AtomStore and createAtomStore for per-request SSR isolation — creating scoped atom clones, hydrating snapshots, and tearing down stores after each request.
-when_to_use: |
-  - User imports AtomStore or createAtomStore from @mongez/atom
-  - User asks how to isolate atom state per SSR request
-  - User sees atoms leaking state between concurrent server requests
-  - User asks about store.use(), store.hydrate(), store.snapshot(), or store.destroy()
-  - User sets up AtomStoreProvider in @mongez/react-atom
+description: |
+  How to use `AtomStore` and `createAtomStore` for per-request SSR isolation — creating scoped atom clones, hydrating snapshots, and tearing down stores after each request.
+  TRIGGER when: code imports `AtomStore`, `createAtomStore`, or calls `store.use`, `store.get`, `store.has`, `store.list`, `store.hydrate`, `store.snapshot`, `store.destroy` from `@mongez/atom`; user asks "how do I isolate atom state per SSR request", "why are atoms leaking between requests", or "how do I serialize and rehydrate atoms"; `import { createAtomStore, AtomStore } from "@mongez/atom"`.
+  SKIP: defining the atoms themselves (use `mongez-atom-atoms` or `mongez-atom-defining-atoms`); React-side `AtomStoreProvider` / `useAtomStore` wiring (lives in `@mongez/react-atom`); generic client-only state without SSR (no store needed).
 ---
 
 # AtomStore — SSR Isolation

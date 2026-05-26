@@ -1,12 +1,9 @@
 ---
 name: mongez-atom-recipes
-description: Idiomatic composition recipes for @mongez/atom covering boolean toggles, cart totals, derived watch patterns, SSR hydration, DevTools teardown, and scratch atoms.
-when_to_use: |
-  - User asks for a real-world example or pattern combining multiple @mongez/atom features
-  - User asks how to wire SSR snapshot serialization and client-side hydration end-to-end
-  - User asks for a complete cart or todo example using atomCollection with computed totals
-  - User asks how to clean up enableAtomDevtools on HMR (Vite or Webpack hot reload)
-  - User asks about using onChange to derive state into a second atom as a side-effect
+description: |
+  Idiomatic composition recipes for `@mongez/atom` covering boolean toggles, cart totals, derived watch patterns, SSR hydration, DevTools teardown, and scratch atoms.
+  TRIGGER when: code combines several of `createAtom`, `atomCollection`, `derive`, `createAtomStore`, `enableAtomDevtools`, `onChange`, `watch` in one place; user asks "give me a real-world example", "show me an end-to-end SSR snapshot + hydrate pattern", "build a cart with computed totals", "how do I tear down `enableAtomDevtools` on HMR", or "how do I derive state into another atom via `onChange`"; `import { createAtom, atomCollection, derive, createAtomStore, enableAtomDevtools } from "@mongez/atom"` together.
+  SKIP: single-feature deep dives — route to the focused skill instead (`mongez-atom-atoms`, `mongez-atom-collections`, `mongez-atom-derived`, `mongez-atom-persist`, `mongez-atom-atom-store`, `mongez-atom-devtools`, `mongez-atom-actions`); React-specific composition (lives in `@mongez/react-atom`); query/cache patterns (use `@mongez/atomic-query`).
 ---
 
 # Recipes

@@ -1,12 +1,9 @@
 ---
 name: mongez-atom-derived-atoms
-description: How to create computed atoms with derive() — auto-tracked dependencies, conditional reads, chained derivations, and cleanup.
-when_to_use: |
-  - User imports or calls derive from @mongez/atom
-  - User asks how to create a computed value that updates when its sources change
-  - User asks about auto-tracked dependencies or dynamic dependency graphs
-  - User chains one derived atom off another
-  - User asks how to clean up a derived atom
+description: |
+  How to create computed atoms with `derive()` — auto-tracked dependencies, conditional reads, chained derivations, and cleanup.
+  TRIGGER when: code imports or calls `derive`, uses `DeriveGetter` / `DeriveOptions` types, or builds a value from other atoms via a `get` argument; user asks "how do I create a computed atom that updates with its sources", "how do I auto-track dependencies", or "how do I clean up a derived atom"; `import { derive } from "@mongez/atom"`.
+  SKIP: writable base atoms (use `mongez-atom-atoms` / `mongez-atom-defining-atoms`); array verbs over a collection (use `mongez-atom-collections`); React-side hook integration (lives in `@mongez/react-atom`); the sibling `mongez-atom-derived` skill — only one of the two should fire for the same request.
 ---
 
 # Derived Atoms

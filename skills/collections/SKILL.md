@@ -1,12 +1,9 @@
 ---
 name: mongez-atom-collections
-description: How to use atomCollection to manage array-typed atoms with built-in mutation verbs like push, pop, remove, map, and replace.
-when_to_use: |
-  - User imports or calls atomCollection from @mongez/atom
-  - User asks how to manage a list or array of items as atom state
-  - User calls push, pop, shift, unshift, remove, removeItem, replace, or map on an atom
-  - User asks about the AtomCollectionActions type or CollectionOptions
-  - User asks about the length getter on a collection atom
+description: |
+  How to use `atomCollection` to manage array-typed atoms with built-in mutation verbs like `push`, `pop`, `remove`, `map`, and `replace`.
+  TRIGGER when: code imports or calls `atomCollection`, or invokes `push`, `unshift`, `pop`, `shift`, `replace`, `remove`, `removeItem`, `removeAll`, `map`, `forEach`, `index`, `get(indexOrPredicate)`, `length` on an atom, or uses `AtomCollectionActions` / `CollectionOptions` types; user asks "how do I manage an array as atom state", "how do I push/pop/remove items in an atom", or "what's the difference between createAtom and atomCollection"; `import { atomCollection } from "@mongez/atom"`.
+  SKIP: scalar/object atoms (use `mongez-atom-atoms` or `mongez-atom-defining-atoms`); computed array views over collections (use `mongez-atom-derived` / `mongez-atom-derived-atoms`); React-list rendering hooks (live in `@mongez/react-atom`).
 ---
 
 # Atom Collections

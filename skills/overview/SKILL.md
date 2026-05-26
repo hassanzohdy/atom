@@ -1,12 +1,9 @@
 ---
 name: mongez-atom-overview
-description: Mental model, exports, and decision guide for @mongez/atom — the framework-agnostic state primitive at the core of the Mongez state family.
-when_to_use: |
-  - User imports from @mongez/atom for the first time and asks what it does
-  - User asks whether to use @mongez/atom vs @mongez/react-atom
-  - User asks for a list of what @mongez/atom exports
-  - User asks about the event system, lifecycle, or DevTools support
-  - User asks for a high-level architecture overview of Mongez state
+description: |
+  Mental model, exports, and decision guide for `@mongez/atom` — the framework-agnostic state primitive at the core of the Mongez state family.
+  TRIGGER when: code first imports anything from `@mongez/atom` (`createAtom`, `atomCollection`, `derive`, `AtomStore`, `createAtomStore`, `enableAtomDevtools`, `getAtom`, `atomsList`, `atomsObject`); user asks "what is @mongez/atom", "which package should I use for state — @mongez/atom or @mongez/react-atom", "what does @mongez/atom export", or "give me a high-level architecture of Mongez state"; `import { ... } from "@mongez/atom"` with no specific topic yet identified.
+  SKIP: any deep how-to question that already maps to a focused skill (`mongez-atom-atoms`, `mongez-atom-collections`, `mongez-atom-derived`, `mongez-atom-persist`, `mongez-atom-atom-store`, `mongez-atom-devtools`, `mongez-atom-actions`, `mongez-atom-recipes`); React-specific hook questions (`@mongez/react-atom`); server-state caching (`@mongez/atomic-query`).
 ---
 
 # @mongez/atom — Overview

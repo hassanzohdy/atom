@@ -127,10 +127,10 @@
   resolved "https://registry.yarnpkg.com/@mongez/events/-/events-2.1.0.tgz#644fa0c0ae226f162ccca4a755a059892d545253"
   integrity sha512-gUTDm8fy0BRJmG/kkSmLi/Ir2PAFQQtk0FE9GGivnIK5YpGJD6MFrIj3Ui8SN3mMFKvCJae6zJjuYv6fLFQgBQ==
 
-"@mongez/reinforcements@^2.3.10":
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/@mongez/reinforcements/-/reinforcements-2.4.0.tgz#c8ebc6d70eefde1741b7f566180ea322358ce006"
-  integrity sha512-RkoVe7X3mfct2IHx44fICKhxqcFTWLeaKVEAx6bj9L6+dr+qtkQGCcRP8xv5m6IESCfO8C2RLPtdBeGETg0AYA==
+"@mongez/reinforcements@^3.1.0":
+  version "3.1.14"
+  resolved "https://registry.yarnpkg.com/@mongez/reinforcements/-/reinforcements-3.1.14.tgz#70813e2291421433e744a4085346ef2e95e6fe2f"
+  integrity sha512-G1a6SPpEETHviMSFNTI1cMEk6JT9oUmg2gjegqyiBuIllyA77gzrj9x0qYbw+ar+ybo2lIxAuIMATBB0d9Zwow==
 
 "@rollup/rollup-android-arm-eabi@4.60.4":
   version "4.60.4"

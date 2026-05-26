@@ -32,7 +32,7 @@ type CollectionOptions<V> = Omit<AtomOptions<V[], AtomCollectionActions<V>>, "de
 | `replace(index, item)` | Overwrite at index. |
 | `remove(indexOrPredicate)` | Drop one by index or `(item, index, array) => boolean`. |
 | `removeItem(item)` | Strict-equality remove of the first occurrence. |
-| `removeAll(item)` | Returns a filtered copy (does NOT mutate — name is historical, use `update` if you want to commit). |
+| `removeAll(item)` | Remove every occurrence of `item` (strict equality). Mutates and triggers update. |
 | `map(cb)` | In-place map: rewrites the value AND returns the new array. |
 | `forEach(cb)` | Read-only iteration. |
 | `index(predicate)` | `findIndex` wrapper. |
@@ -61,6 +61,5 @@ todos.remove((t) => t.done);
 
 ## Gotchas
 
-- `removeAll` is non-mutating by historical name. If you want to commit the result, do `todos.update(todos.removeAll(item))` or use `remove`/`removeItem`.
 - `map` is mutating despite the name — it rewrites the value AND returns the new array. Use `atom.value.map(...)` if you want a pure transform.
 - The `length` action is exposed as a property getter, not a function. Read it as `todos.length`, not `todos.length()`.

@@ -52,7 +52,7 @@ cart.total;  // 35
 
 ## Derived state via `watch`
 
-The poor-man's derived atom until first-class `derive` lands. Watch a key and write the derived value into another atom.
+When you need a side effect on every change (writing to another atom, logging, hitting an API) rather than a pure derivation, subscribe via `onChange`. For pure computed values, prefer `derive` (see `mongez-atom-derived`).
 
 ```ts
 const inputAtom = createAtom({ key: "search.input", default: "" });

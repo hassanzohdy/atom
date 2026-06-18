@@ -1,6 +1,6 @@
 # Changelog — @mongez/atom
 
-## Unreleased
+## [6.0.9] — 2026-05-27
 
 ### Fixed
 
@@ -24,7 +24,7 @@
 - **Test suite**. 52 unit tests across `atom`, `atom-collection`, `atom-store`, and `devtools`.
 - **CI**. GitHub Actions workflow: Node 18/20/22 × Ubuntu, plus Node 20 × Windows.
 
-### Changed (breaking)
+### Changed
 
 - **`Atom<V, A>` is now a conditional type**. Object-only methods (`merge`, `change`, `silentChange`, `get(key)`, `watch(key, cb)`) are removed from the type when `V` is a primitive. `Atom<boolean>.change(...)` is a compile error. `Atom<any>` keeps both surfaces (legacy permissive default).
 - **`AtomActions<V>` no longer includes `| any`**. Was `[key: string]: (...) => any | any`. The `| any` collapsed the entire type to `any` and defeated per-action type safety. Now just `(this: Atom<V>, ...args: any[]) => any`.

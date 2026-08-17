@@ -1,36 +1,71 @@
 ---
 name: mongez-atom-overview
 description: |
-  Mental model, exports, and decision guide for `@mongez/atom` — the framework-agnostic state primitive at the core of the Mongez state family.
-  TRIGGER when: code first imports anything from `@mongez/atom` (`createAtom`, `atomCollection`, `derive`, `AtomStore`, `createAtomStore`, `enableAtomDevtools`, `getAtom`, `atomsList`, `atomsObject`); user asks "what is @mongez/atom", "which package should I use for state — @mongez/atom or @mongez/react-atom", "what does @mongez/atom export", or "give me a high-level architecture of Mongez state"; `import { ... } from "@mongez/atom"` with no specific topic yet identified.
-  SKIP: any deep how-to question that already maps to a focused skill (`mongez-atom-atoms`, `mongez-atom-collections`, `mongez-atom-derived`, `mongez-atom-persist`, `mongez-atom-atom-store`, `mongez-atom-devtools`, `mongez-atom-actions`, `mongez-atom-recipes`); React-specific hook questions (`@mongez/react-atom`); server-state caching (`@mongez/atomic-query`).
+  Mental model, exports, and decision guide for @mongez/atom — the framework-agnostic state primitive at the core of the Mongez state family. Atoms bundle a typed value with action methods, support derived values, persistence, SSR isolation, and Redux DevTools time-travel.
 ---
 
 # @mongez/atom — Overview
 
+Framework-agnostic state, the way it should be. An atom isn't just a value — it's a value with **action methods bound to it**. Call domain verbs (`cartAtom.push(item)`, `authAtom.login(creds)`, `sidebarAtom.toggle()`) instead of writing free-standing setters everywhere. Works in any JS/TS environment — React, Vue, Node, vanilla.
+
+## Highlighted features
+
+<div class="mongez-highlights">
+
+<div class="mongez-highlight" data-accent="ice">
+  <svg class="mongez-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="10"/></svg>
+  <h3>Values with verbs</h3>
+  <p>Action methods live on the atom — <code>sidebar.toggle()</code>, not <code>setSidebar(!sidebar.value)</code>. Bound <code>this</code>, named intent.</p>
+</div>
+
+<div class="mongez-highlight" data-accent="ice">
+  <svg class="mongez-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+  <h3>Derived values, auto-tracked</h3>
+  <p><code>derive("fullName", get =&gt; `${get(first)} ${get(last)}`)</code> — dependency graph rebuilt on each read, conditional reads work, chained derives propagate.</p>
+</div>
+
+<div class="mongez-highlight" data-accent="fire">
+  <svg class="mongez-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  <h3>Persistence built in</h3>
+  <p><code>persist: true</code> for localStorage, or any custom <code>PersistAdapter</code> (cookies, IndexedDB, <code>@mongez/cache</code>, …). Restore on construction, write on every update.</p>
+</div>
+
+<div class="mongez-highlight" data-accent="fire">
+  <svg class="mongez-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+  <h3>SSR-isolated stores</h3>
+  <p><code>AtomStore</code> + <code>createAtomStore</code> for per-request isolation. Module-level singletons stay safe; per-user state stays scoped.</p>
+</div>
+
+<div class="mongez-highlight" data-accent="bolt">
+  <svg class="mongez-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+  <h3>Redux DevTools time-travel</h3>
+  <p><code>enableAtomDevtools()</code> bridges to the Redux DevTools extension — full action history + jump-to-state. Tree-shaken when never imported.</p>
+</div>
+
+<div class="mongez-highlight" data-accent="bolt">
+  <svg class="mongez-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+  <h3>Specialized factories</h3>
+  <p><code>atomCollection</code> for arrays (adds <code>push</code>/<code>pop</code>/<code>remove</code>/<code>map</code>), <code>derive</code> for computed values — the common shapes don't need rebuilding.</p>
+</div>
+
+</div>
+
 ## Install
 
 ```sh
-# npm
 npm install @mongez/atom
-
-# yarn
-yarn add @mongez/atom
-
-# pnpm
-pnpm add @mongez/atom
+# or: yarn add @mongez/atom
+# or: pnpm add @mongez/atom
 ```
 
 Peer deps installed automatically: `@mongez/events`, `@mongez/reinforcements`.
 
-## Quick example
-
-Atoms aren't just values — they're values with verbs bound to them. Call domain methods directly on the atom instead of writing setters everywhere:
+## Quick peek
 
 ```ts
 import { createAtom } from "@mongez/atom";
 
-const sidebar = createAtom({
+const sidebarAtom = createAtom({
   key: "ui.sidebar",
   default: false,
   actions: {
@@ -40,73 +75,31 @@ const sidebar = createAtom({
   },
 });
 
-sidebar.toggle();   // no setSidebar(!sidebar) ceremony
-sidebar.value;      // true
+sidebarAtom.toggle();   // no setSidebar(!sidebar.value) ceremony
+sidebarAtom.value;      // true
 ```
 
-## When to use
-
-Load this skill when the user:
-- Is new to `@mongez/atom` and needs orientation
-- Asks "which package should I use for state?"
-- Asks about lifecycle events, the global registry, or DevTools wiring
-- Needs to understand the relationship between `@mongez/atom`, `@mongez/react-atom`, and `@mongez/atomic-query`
+Atoms aren't just values — they're values with verbs bound to them. Call domain methods directly on the atom instead of writing setters everywhere. **Naming convention:** suffix atom variables with `Atom` (e.g. `counterAtom`, `sidebarAtom`) to avoid clashes with component props.
 
 ## Mental model
 
-An **atom** is not just a value — it is a value bundled with methods (actions) that mutate it. Instead of writing free-standing setter helpers, you define verbs directly on the atom:
+All atoms live in a module-level registry (`atoms` object exported from the package). Each atom is keyed by the `key` string passed to `createAtom`. Keys should be namespaced with dots: `"ui.sidebar"`, `"cart"`, `"user.profile"`.
 
 ```ts
-sidebar.toggle();     // not: setSidebar(!sidebar.value)
-cart.push(item);      // not: setCart([...cart.value, item])
-auth.login(creds);    // not: dispatch({ type: "AUTH_LOGIN", payload: creds })
+sidebarAtom.toggle();     // not: setSidebar(!sidebar.value)
+cartAtom.push(item);      // not: setCart([...cart.value, item])
+authAtom.login(creds);    // not: dispatch({ type: "AUTH_LOGIN", payload: creds })
 ```
-
-All atoms live in a module-level registry (`atoms` object exported from the package). Each atom is keyed by the `key` string passed to `createAtom`. Keys should be namespaced with dots: `"ui.sidebar"`, `"cart"`, `"user.profile"`.
 
 ## Package hierarchy
 
 | Package | Role |
 |---|---|
-| `@mongez/atom` | Core. Framework-agnostic atom factory, SSR isolation, persistence, DevTools. Use in any JS/TS environment. |
-| `@mongez/react-atom` | React adapter. Wraps `@mongez/atom` with hooks (`useAtom`, `useValue`, `useState`), `<AtomStoreProvider>`, and SSR hydration helpers. Use in React apps. |
-| `@mongez/atomic-query` | Server-state cache on top of atoms. `useQuery`, `useMutation`, `useInfiniteQuery`. Use for remote data fetching. |
+| `@mongez/atom` | Core. Framework-agnostic atom factory, SSR isolation, persistence, DevTools. |
+| [`@mongez/react-atom`](/react-atom/overview/) | React adapter. Per-atom hooks (`useValue`, `useState`, `use`), `<AtomStoreProvider>`, preset atoms. |
+| [`@mongez/atomic-query`](/atomic-query/overview/) | Server-state cache on top of atoms. `useQuery`, `useMutation`, `useInfiniteQuery`. |
 
 **Rule of thumb**: `@mongez/atom` for shared, UI-independent logic. `@mongez/react-atom` for anything that drives component re-renders. `@mongez/atomic-query` for async server data.
-
-## Exports at a glance
-
-```ts
-import {
-  // Core factory
-  createAtom,
-
-  // Array-specialized factory (adds push/pop/remove/map/etc.)
-  atomCollection,
-
-  // Computed/derived atom with auto-tracked dependencies
-  derive,
-
-  // SSR per-request isolation
-  AtomStore,
-  createAtomStore,
-
-  // Redux DevTools bridge (browser-only, opt-in)
-  enableAtomDevtools,
-
-  // Global registry helpers
-  getAtom,
-  atomsList,
-  atomsObject,
-
-  // Types
-  type Atom,
-  type AtomOptions,
-  type AtomActions,
-  type PersistAdapter,
-  type PersistOption,
-} from "@mongez/atom";
-```
 
 ## Lifecycle events
 
@@ -120,28 +113,17 @@ Every atom emits on the `@mongez/events` bus under `atoms.${key}`:
 
 The namespace is segment-aware: destroying `users.1` does **not** match `users.10`.
 
-## DevTools
-
-```ts
-import { enableAtomDevtools } from "@mongez/atom";
-
-// Call once at app entry, dev only.
-if (process.env.NODE_ENV !== "production") {
-  enableAtomDevtools({
-    name: "MyApp",
-    ignore: [/^mouse\./, /^scroll\./],  // skip high-frequency atoms
-    scanInterval: 1000,                  // ms, default; picks up lazily registered atoms
-  });
-}
-```
-
-- Connects to `window.__REDUX_DEVTOOLS_EXTENSION__`. No-op when extension is absent.
-- Tree-shaken when never imported.
-- Time-travel via `JUMP_TO_STATE` restores all atoms via `silentUpdate`.
-- Returns a teardown function.
-
 ## Key pitfalls
 
-- **Key collisions**: keys are global. If two `createAtom` calls share the same key, the second overwrites the first in the registry. Prefix keys by domain (`"ui.sidebar"`, not `"sidebar"`).
-- **No reference equality shortcut for objects**: `update()` short-circuits only when the new value `=== currentValue`. For object atoms, always pass a new reference or use `merge()`/`change()`.
-- `@mongez/atom` has no React — never import `useAtom` from it. That lives in `@mongez/react-atom`.
+- **Key collisions are global.** If two `createAtom` calls share the same key, the second overwrites the first. Prefix keys by domain (`"ui.sidebar"`, not `"sidebar"`).
+- **No reference equality shortcut for objects.** `update()` short-circuits only when the new value `=== currentValue`. For object atoms, always pass a new reference or use `merge()` / `change()`.
+- **No React here.** `useAtom` lives in `@mongez/react-atom`, not this package.
+
+## Where to go next
+
+- **[Atoms](../atoms/)**, **[Defining atoms](../defining-atoms/)**, **[Actions](../actions/)** — the core API
+- **[Derived atoms](../derived/)**, **[Atom collections](../collections/)** — specialised shapes
+- **[Persistence](../persist/)** — `persist: true` and custom `PersistAdapter`
+- **[Atom stores (SSR)](../atom-store/)** — per-request isolation
+- **[Devtools](../devtools/)** — Redux DevTools time-travel
+- **[Recipes](../recipes/)** — cross-feature compositions

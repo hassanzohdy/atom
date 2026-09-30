@@ -1,5 +1,16 @@
 # Migration — @mongez/atom
 
+## 6.x → 7.0
+
+`@mongez/atom` 7 is versioned in lockstep with `@mongez/react-atom` 7. The core API is unchanged and every new option defaults to the old behavior, so plain `@mongez/atom` users only need to bump the version. The breaking changes live in `@mongez/react-atom` (see its `MIGRATION.md`), which now requires `@mongez/atom` `^7.0.0`.
+
+Worth knowing (no action needed):
+
+- `AtomStore.use()` seeds new clones from the template's default value, not its current value. `atom.clone()` still copies the current value unless you pass `{ seed: "default" }`.
+- `store.use(atom)` is idempotent: passing an already-scoped clone returns the store's clone of the same template.
+- `template.destroy()` no longer unsubscribes the clones of that template.
+- New: `persistHydration: "deferred"` with `atom.hydratePersisted()`, `register: false`, `clone({ seed })`, `store.serverSnapshot()`.
+
 ## 1.x → 2.0 (upcoming)
 
 A correctness pass with a small number of TypeScript-level breaks and one runtime change. Most consumer code keeps working. The full list of fixes is in [`CHANGELOG.md`](./CHANGELOG.md); this file covers the cases where you have to do something.

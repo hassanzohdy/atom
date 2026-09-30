@@ -241,8 +241,9 @@ const a = createAtom({ key: "original", default: 42 });
 
 const b = a.clone();          // key: "original.clone.1"; registered globally
 const c = a.clone({ register: false }); // isolated clone, not in registry
+const d = a.clone({ register: false, seed: "default" }); // starts from the default value, not the current one
 
-a.destroy();  // removes from registry, triggers delete event, unsubscribes all listeners
+a.destroy();  // removes from registry, triggers delete event, unsubscribes a's own topics (clones keep theirs)
 ```
 
 ## Key pitfalls

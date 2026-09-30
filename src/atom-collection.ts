@@ -64,11 +64,25 @@ export interface AtomCollectionActions<Value> extends AtomActions<Value[]> {
    * Replace item in array by index
    */
   replace(this: Atom<Value[]>, index: number, item: Value): void;
+}
+
+/**
+ * An atom collection: the collection verbs plus a `length` getter.
+ *
+ * `length` is a property, not a method, so it cannot live on
+ * {@link AtomCollectionActions}: that interface extends the `AtomActions`
+ * index signature, whose members must all be functions. It is added here
+ * instead, which keeps `todos.length` typed as `number`.
+ */
+export type AtomCollection<Value> = Atom<
+  Value[],
+  AtomCollectionActions<Value>
+> & {
   /**
    * Get array length
    */
-  length: number; // As a property
-}
+  readonly length: number;
+};
 
 export type CollectionOptions<Value> = Omit<
   AtomOptions<Value[], AtomCollectionActions<Value>>,
@@ -82,10 +96,11 @@ export type CollectionOptions<Value> = Omit<
  */
 export function atomCollection<Value = any>(
   options: CollectionOptions<Value>,
-): Atom<Value[], AtomCollectionActions<Value>> {
+): AtomCollection<Value> {
   return createAtom<Value[], AtomCollectionActions<Value>>({
     key: options.key,
     default: options.default ?? [],
+    register: options.register,
     actions: {
       ...options.actions,
       push(...items: Value[]) {
@@ -144,8 +159,11 @@ export function atomCollection<Value = any>(
       forEach(callback: (item: Value, index: number, array: Value[]) => void) {
         this.value.forEach(callback);
       },
-      get length() {
-        return this.value?.length;
+      // Runtime: a `number` accessor (see `AtomCollection.length`). It is typed
+      // `never` only so the object satisfies the `AtomActions` index signature
+      // (every member a function); `never` is assignable to any type.
+      get length(): never {
+        return this.value?.length as never;
       },
       replace(index: number, item: Value) {
         this.update(
@@ -159,5 +177,5 @@ export function atomCollection<Value = any>(
         );
       },
     },
-  });
+  }) as AtomCollection<Value>;
 }

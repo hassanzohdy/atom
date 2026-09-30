@@ -138,6 +138,8 @@ counter.silentReset();          // back to default, emits reset only
 | `onUpdate` | `(cb) => EventSubscription` | Subscribe to updates at construction. |
 | `get` | `(key, default?, value?) => V[K]` | Custom getter routed through `atom.get(key)`. |
 | `persist` | `boolean \| PersistAdapter<V>` | Persist value externally — see [Persistence](#persistence). |
+| `persistHydration` | `"immediate" \| "deferred"` | When the stored value is read. Default `"immediate"` (at creation). `"deferred"` waits for `atom.hydratePersisted()` — see [Deferred hydration](#deferred-hydration-ssr-safe). |
+| `register` | `boolean` | Default `true`. `false` keeps the atom out of the global `atoms` registry (a "local" atom). Use a unique `key` per instance: events still travel on the shared `atoms.<key>.*` bus. |
 
 ### Base methods on every atom
 
@@ -151,8 +153,9 @@ counter.silentReset();          // back to default, emits reset only
 | `atom.silentReset()` | Restore the default; emit `reset` only. |
 | `atom.onChange(cb)` | Subscribe to updates. Returns `{ unsubscribe }`. |
 | `atom.onReset(cb)` / `atom.onDestroy(cb)` | Lifecycle subscriptions. |
-| `atom.clone({ register? })` | Deep-clone into `${key}.clone.{n}`. `register: false` skips the global map. |
-| `atom.destroy()` | Remove from registry, unsubscribe namespace events, emit `delete`. |
+| `atom.clone({ register?, seed? })` | Deep-clone into `${key}.clone.{n}`. `register: false` skips the global map. `seed: "current"` (default) copies the current value; `seed: "default"` copies the default value and ignores updates made to the source. |
+| `atom.hydratePersisted()` | Read the `persist` adapter and apply the stored value. No-op without an adapter, after the first call, or once the atom was updated or reset. |
+| `atom.destroy()` | Remove from registry (only when the registry entry is this atom), unsubscribe this atom's own `update` / `reset` / `delete` topics, emit `delete`. Clones of the atom keep their subscriptions. |
 | `atom.type` | `"object" \| "array" \| typeof primitive` — locked at construction. |
 | `atom.length` | Array/string length getter. |
 
@@ -167,6 +170,8 @@ When `V` is an object/array, the atom also carries:
 | `atom.silentChange(key, value)` | Same without the `update` event. |
 | `atom.get(key, default?)` | Read one property (or via the custom `get` option). |
 | `atom.watch(key, cb)` | Subscribe to changes of a single key. Returns `{ unsubscribe }`. |
+
+> **`watch` works on any atom whose value is an object at the moment of the update.** Object-ness is decided per update, not from the default, so an atom declared with `default: null` still notifies `watch("name", …)` once it holds an object (and again when it goes back to `null`).
 
 > Calling `merge` / `change` / `watch` on a primitive atom (`Atom<boolean>`, `Atom<number>`, `Atom<string>`) is a compile error — these methods are stripped from the type because they would silently corrupt the value at runtime.
 
@@ -413,9 +418,27 @@ themeAtom.update("dark");
 
 The built-in adapter checks `typeof window === "undefined"` and no-ops on the server.
 
+### Deferred hydration (SSR-safe)
+
+Reading storage while the atom is created (import time) means a browser bundle starts from the stored value while the server rendered the default, which is a guaranteed hydration mismatch for anything visible on first paint. Create the atom with `persistHydration: "deferred"` to skip that read:
+
+```ts
+const themeAtom = createAtom({
+  key: "ui.theme",
+  default: "light",
+  persist: true,
+  persistHydration: "deferred",
+});
+
+themeAtom.value;              // "light" — nothing was read
+themeAtom.hydratePersisted(); // reads storage, applies it with update(), notifies subscribers
+```
+
+`hydratePersisted()` runs at most once. An `update` or `reset` that happens before it wins, and the stored value is not applied over it. `@mongez/react-atom`'s `atom()` defaults to `"deferred"` and calls `hydratePersisted()` after mount, so React atoms never read storage during render or on the server. `createAtom` keeps `"immediate"` as its default.
+
 ### Lifecycle
 
-1. **Bootstrap.** On creation the adapter is read. A stored value lands via `silentUpdate` (no `update` event fires for the hydration). Async adapters resolve after the constructor returns.
+1. **Bootstrap.** On creation (or on `hydratePersisted()` when deferred) the adapter is read. A stored value lands via `silentUpdate` (no `update` event fires for the hydration). Async adapters resolve after the constructor returns.
 2. **Write-through.** Every `update` / `change` / `merge` writes to the adapter. `silentUpdate` does NOT — silent means silent, including to storage.
 3. **Reset removes.** `reset()` deletes the entry from the adapter; the next session starts fresh.
 4. **Error tolerance.** Sync throws and async rejections are swallowed so a transient storage error (quota exceeded, private-mode block) never crashes the atom.
@@ -488,7 +511,8 @@ async function handleRequest(req, res) {
 
 | Member | Behavior |
 |---|---|
-| `store.use(template)` | Lazy clone — first call creates the scoped clone, later calls return it. |
+| `store.use(template)` | Lazy clone — first call creates the scoped clone, later calls return it. A new clone starts from the template's **default** value (or the queued hydration value), never from the template's current value, so a stray write to the module-level template cannot leak into a store. Idempotent: passing an atom that is already a scoped clone returns this store's clone of the same template. Local atoms (`register: false`) come back unchanged. |
+| `store.serverSnapshot(scoped)` | The value a scoped atom should render on the first pass of a server-rendered tree (React's `getServerSnapshot`). Frozen at the first read so the hydration render matches the server HTML; `hydrate()` re-seeds it. |
 | `store.get(key)` | Look up an existing scoped atom by the template's original key. `undefined` if not yet `use()`d. |
 | `store.has(key)` | True when `use(template)` has been called for the matching key. |
 | `store.list()` | All scoped atoms currently in this store, in insertion order. |

@@ -4,7 +4,9 @@
  * Plug in any store-shaped object (cache, localStorage wrapper, cookie
  * helper, IndexedDB layer) and atoms will:
  *
- *   1. Load their initial value from the adapter at creation (sync or async).
+ *   1. Load their initial value from the adapter at creation (sync or async),
+ *      or later via `atom.hydratePersisted()` when the atom is created with
+ *      `persistHydration: "deferred"`.
  *   2. Write every subsequent update through to the adapter.
  *   3. Remove the entry on `reset()`.
  *
@@ -12,7 +14,7 @@
  * silently no-ops on the server (no `window`). For SSR-safe per-request
  * persistence, supply your own cookie-aware adapter.
  */
-import type { Atom, AtomOptions } from "./types";
+import type { Atom, AtomOptions, PersistHydration } from "./types";
 
 /**
  * Shape of an external store. Methods may be sync or async; the
@@ -83,39 +85,61 @@ export function resolvePersistAdapter<V>(
 /**
  * Wire an atom up to a persistence adapter.
  *
- * On creation, asynchronously reads the stored value and applies it via
- * `silentUpdate` (so subscribers see it on next render but no `update`
- * event fires). On every update afterwards, writes through to the
- * adapter. On `reset`, removes the entry.
+ * Reading: in `"immediate"` mode the stored value is read right away and
+ * applied via `silentUpdate` (no `update` event). In `"deferred"` mode
+ * nothing is read until the returned `hydrate` function runs; the stored
+ * value is then applied with `update` so mounted subscribers re-render.
+ * Hydration happens at most once, and never over a value the app already
+ * wrote: an update or reset that lands first marks the atom as hydrated.
+ *
+ * Writing: on every update afterwards, writes through to the adapter. On
+ * `reset`, removes the entry.
  *
  * This is internal — `createAtom` calls it when `options.persist` is
- * truthy. Consumers don't call it directly.
+ * truthy and installs the returned function as `atom.hydratePersisted`.
  */
 export function attachPersist<V, A extends Record<string, any>>(
   atom: Atom<V, A>,
   adapter: PersistAdapter<V>,
   options: AtomOptions<V, any>,
-): void {
-  // Bootstrap: read the stored value. We don't block the constructor on
-  // an async adapter — the consumer sees the default until the read
-  // resolves, then a silentUpdate flips the value in place.
-  // Both sync throws and async rejections are caught so a broken
-  // adapter never crashes atom creation.
-  try {
-    const stored = adapter.get(atom.key);
-    if (stored instanceof Promise) {
-      stored
-        .then(value => {
-          if (value !== undefined) atom.silentUpdate(value);
-        })
-        .catch(() => {
-          /* keep default */
-        });
-    } else if (stored !== undefined) {
-      atom.silentUpdate(stored);
+  mode: PersistHydration = "immediate",
+): () => void {
+  let hydrated = false;
+
+  const applyStored = (value: V | undefined): void => {
+    if (value === undefined) return;
+    if (mode === "deferred") {
+      atom.update(value);
+    } else {
+      atom.silentUpdate(value);
     }
-  } catch {
-    /* sync throw on read — keep default */
+  };
+
+  // Read the stored value once. We don't block on an async adapter — the
+  // consumer sees the default until the read resolves. Both sync throws and
+  // async rejections are caught so a broken adapter never crashes the atom.
+  const hydrate = (): void => {
+    if (hydrated) return;
+    hydrated = true;
+
+    try {
+      const stored = adapter.get(atom.key);
+      if (stored instanceof Promise) {
+        stored
+          .then(applyStored)
+          .catch(() => {
+            /* keep default */
+          });
+      } else {
+        applyStored(stored);
+      }
+    } catch {
+      /* sync throw on read — keep default */
+    }
+  };
+
+  if (mode === "immediate") {
+    hydrate();
   }
 
   // Write-through on every update. Using onChange instead of replacing
@@ -124,6 +148,9 @@ export function attachPersist<V, A extends Record<string, any>>(
   // private-mode block, etc.) doesn't break the consumer's update flow;
   // async rejections are caught the same way.
   const updateSub = atom.onChange(newValue => {
+    // A write that lands before the deferred read wins over the stored value.
+    hydrated = true;
+
     try {
       const result = adapter.set(atom.key, newValue);
       if (result instanceof Promise) result.catch(() => {});
@@ -134,6 +161,8 @@ export function attachPersist<V, A extends Record<string, any>>(
 
   // Drop the entry on reset so the next session starts fresh.
   const resetSub = atom.onReset(() => {
+    hydrated = true;
+
     try {
       const result = adapter.remove(atom.key);
       if (result instanceof Promise) result.catch(() => {});
@@ -150,4 +179,6 @@ export function attachPersist<V, A extends Record<string, any>>(
 
   // Suppress unused-options lint when not consumed by future logic.
   void options;
+
+  return hydrate;
 }

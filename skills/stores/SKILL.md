@@ -48,7 +48,8 @@ class AtomStore {
 }
 ```
 
-- `use(template)` → returns the scoped clone, creating it lazily.
+- `use(template)` → returns the scoped clone, creating it lazily from the template's default value. Idempotent for atoms that are already scoped clones.
+- `serverSnapshot(scoped)` → the frozen first-pass value for React's `getServerSnapshot`.
 - `hydrate(snapshot)` → seeds values for atoms that may not have been accessed yet. Pending values are applied when the atom first enters the store.
 - `snapshot()` → serializable record of every scoped atom's current value.
 - `destroy()` → unsubscribes events for every scoped atom and clears the store. Always call at the end of a request lifecycle.

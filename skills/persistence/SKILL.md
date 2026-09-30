@@ -160,6 +160,7 @@ const prefixedAdapter: PersistAdapter = {
 ## Key pitfalls
 
 - **`persist: true` is client-only.** On Node/SSR, `window` is undefined and the adapter silently no-ops. The atom always starts from `default` on the server. Use a cookie adapter for SSR.
+- **Deferred hydration for SSR.** Reading storage at creation makes the client start from the stored value while the server rendered the default, a hydration mismatch. Set `persistHydration: "deferred"` (the default for `@mongez/react-atom`'s `atom()`) and the read waits for `atom.hydratePersisted()`, which applies the value with `update()` after mount. An update or reset before it wins; it runs at most once.
 - **Async adapter, async hydration.** When `get()` returns a `Promise`, the atom starts at `default` and switches to the stored value when the promise resolves. In React, this causes a one-render delay. For SSR, sync adapters (cookies) avoid this flash.
 - **`reset()` removes the storage entry.** The next session starts from `default` again. This is intentional — a reset means "clear persisted state".
 - **The atom key is the storage key.** If you rename an atom's key, old persisted data under the previous key becomes orphaned. Clean up manually if needed.

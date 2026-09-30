@@ -83,7 +83,11 @@ Returns an `Atom<V, A>` carrying:
 - `onChange(cb): EventSubscription`
 - `onReset(cb): EventSubscription`
 - `onDestroy(cb): EventSubscription`
-- `clone(options?: { register?: boolean }): Atom<V, A>` — `.clone.{n}` suffix
+- `clone(options?: { register?: boolean; seed?: "current" | "default" }): Atom<V, A>` — `.clone.{n}` suffix; `seed: "default"` copies the default value instead of the current one
+- `hydratePersisted(): void | Promise<void>` — read the `persist` adapter and apply it (once); needed only with `persistHydration: "deferred"`
+- `register: false` (option) — keep the atom out of the global registry; `isLocalAtom(atom)` / `getAtomOrigin(clone)` inspect it
+- `destroy()` unsubscribes only this atom's own topics, so clones of a template keep working
+- key watchers (`watch`, `use(key)`) fire for any update where the old or new value is an object, including atoms declared with `default: null`
 - `destroy(): void` — remove + unsubscribe namespace events
 - `type: string` — `"object" | "array" | typeof primitive`
 - `length: number` — when value is array/string
@@ -160,6 +164,8 @@ type PersistOption<V> = boolean | PersistAdapter<V>;
 
 // On AtomOptions:
 persist?: PersistOption<V>;
+persistHydration?: "immediate" | "deferred"; // default "immediate"; "deferred" waits for atom.hydratePersisted()
+register?: boolean;                          // default true
 ```
 
 - `persist: true` → built-in `localStorageAdapter`. JSON-encodes; no-ops on the server.

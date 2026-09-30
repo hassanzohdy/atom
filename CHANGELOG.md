@@ -1,5 +1,40 @@
 # Changelog — @mongez/atom
 
+## [7.0.0] — 2026-09-30
+
+SSR/CSR correctness fixes. `@mongez/atom` itself stays backward compatible (new options default to the old behavior); the major bump keeps it in lockstep with `@mongez/react-atom` 7, which opts into the new options and carries the breaking changes.
+
+### Breaking changes
+
+- **`@mongez/react-atom` 7 requires `@mongez/atom` `^7.0.0`.** It relies on `hydratePersisted()`, `store.serverSnapshot()`, `clone({ seed })` and `register: false`, which only exist from this version.
+- **Server rendering without a store now throws (in `@mongez/react-atom`).** The old singleton fallback, which only warned once and was silent when `NODE_ENV=production`, is gone: on a server, hooks throw unless an `<AtomStoreProvider>` is mounted.
+- **`persistHydration` defaults to `"deferred"` when atoms are created through `@mongez/react-atom`.** In this package the default is unchanged (`"immediate"`).
+- **`<AtomStoreProvider>` destroys its auto-created store one tick after unmount** (in `@mongez/react-atom`), not synchronously.
+
+### Fixed
+
+- **`AtomStore.use()` seeded new clones from the template's CURRENT value.** One stray `template.update()` on the server therefore leaked into every later request's fresh store. Store clones now start from the template's default value (or the queued hydration value). `atom.clone()` itself still copies the current value unless you pass `{ seed: "default" }`.
+- **`store.use(atom)` was not idempotent.** Passing an atom that is already a scoped clone (for example `useAtom(t).useValue()` in React, where the hook receives the clone as `this`) made a clone of the clone under a different key. It now returns the store's clone of the same template. Clones of another store map to this store's clone, and local atoms are returned unchanged.
+- **Key watchers ignored atoms declared with `default: null`.** Object-ness was decided once from the default, so `watch("name", …)` never fired after such an atom received an object. It is now decided per update (old or new value is an object).
+- **`destroy()` on a template unsubscribed every clone of it.** It ran `unsubscribeNamespace("atoms.<key>")`, which also matches `atoms.<key>.clone.<n>.*`. It now removes only the atom's own `update`, `reset` and `delete` topics. It also removes the registry entry only when that entry is the atom being destroyed, so destroying a `register: false` atom no longer evicts a registered atom with the same key.
+
+### Added
+
+- **`clone({ seed: "current" | "default" })`** (`CloneAtomOptions`). `"default"` copies the default value instead of the current one.
+- **`register: false` on `AtomOptions`** (and on `atomCollection`). Creates a "local" atom outside the global `atoms` registry. `isLocalAtom(atom)` and `getAtomOrigin(clone)` expose the bookkeeping. Give each local atom a unique key: events still travel on the shared `atoms.<key>.*` bus.
+- **`persistHydration: "immediate" | "deferred"`** and **`atom.hydratePersisted()`**. `"deferred"` skips the storage read at creation; `hydratePersisted()` reads the adapter once and applies the value with `update()` so subscribers re-render. An update or reset before it wins. Default stays `"immediate"`.
+- **`store.serverSnapshot(scoped)`**. The value a scoped atom renders on the first pass of a server-rendered tree, frozen at the first read; `hydrate()` re-seeds it and `destroy()` drops it. `@mongez/react-atom` uses it as React's `getServerSnapshot`.
+- **`"sideEffects": false`** in `package.json` so bundlers can tree-shake unused exports.
+
+### Types
+
+- **`atomCollection` typing conflict fixed (type-only, no runtime change).** `AtomCollectionActions` extended the `AtomActions` index signature (every member a function) while declaring `length: number`, which `tsc` rejects (TS2411 on the interface, TS2322 in `atomCollection`). `length` now lives on the new exported `AtomCollection<Value>` type, `Atom<Value[], AtomCollectionActions<Value>> & { readonly length: number }`, which is what `atomCollection()` returns. `todos.length` is still typed `number`; the accessor at runtime is unchanged. `AtomActions` is left untouched, so atoms typed with the default `AtomActions` keep their exact typing.
+
+### Notes
+
+- New members on the `Atom` type: `hydratePersisted`.
+- New exported type: `AtomCollection`. `AtomCollectionActions` no longer declares `length` (see Types).
+
 ## [6.0.9] — 2026-05-27
 
 ### Fixed

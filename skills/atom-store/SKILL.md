@@ -75,7 +75,7 @@ const store = createAtomStore();   // convenience factory, same as new AtomStore
 
 ### store.use(template)
 
-Lazily creates a scoped clone of `template`. Second call with the same template returns the existing clone.
+Lazily creates a scoped clone of `template`. Second call with the same template returns the existing clone. The clone starts from the template's **default** value (or the queued hydration value), never from the template's current value. Passing an atom that is already a scoped clone (of this store or another) returns this store's clone of the same template, and local atoms (`register: false`) come back unchanged.
 
 ```ts
 const scopedUser = store.use(userAtom);
@@ -211,6 +211,9 @@ userAtom.value;              // { name: "Anon" }  — template untouched
 
 - **Always call `store.destroy()` after each request.** Scoped clones subscribe to the `@mongez/events` bus. Failing to destroy creates an event-listener leak that grows with traffic.
 - **`store.use(template)` is lazy.** If a component reads `userAtom.value` directly (template, not `store.use(userAtom)`) on the server, it gets the global default, not the request-scoped value. All server-side reads must go through `store.use()`.
+- **A write to the template never reaches a store.** New clones seed from the default, so a stray `userAtom.update(...)` on the server cannot leak into later requests. It still changes the template itself, so keep server code off the template.
+- **`store.serverSnapshot(scoped)`** is what React's `getServerSnapshot` reads: the value at the first read, frozen, so hydration renders the same thing the server sent. `hydrate()` re-seeds it and `destroy()` drops it.
 - **`store.hydrate()` queues values for atoms not yet used.** If you call `hydrate` before any `use()`, values are staged. They are applied the first time the corresponding `use(template)` is called. Order of operations does not matter.
 - **Clone keys are internal.** A scoped clone's key is `${original.key}.clone.N`. The store indexes it by the **original key** (`template.key`), so `store.get("user")` works even though the clone's `.key` property is different.
+- **Scoped clones are not persisted.** Clones do not carry the template's `persist` option, so persistence applies to unscoped atoms only.
 - **Do not use `persist: true` with scoped atoms.** The built-in localStorage adapter no-ops on the server, but a custom async adapter on a scoped atom would write per-request data to a shared store keyed by the clone's suffixed key. If you need SSR-safe persistence, apply it to the template and use a cookie adapter that reads from `req.cookies`.

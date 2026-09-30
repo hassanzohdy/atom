@@ -71,8 +71,9 @@ export type AtomOptions<
    * - Omitted / `false` → no persistence.
    *
    * Behavior:
-   *   1. On creation, the adapter is read; if a value is present it
-   *      replaces the default via `silentUpdate` (no `update` event).
+   *   1. On creation (or, with `persistHydration: "deferred"`, on
+   *      `hydratePersisted()`), the adapter is read; if a value is present it
+   *      replaces the default.
    *   2. Every subsequent update writes through to the adapter.
    *   3. `reset()` removes the entry from the adapter.
    *
@@ -81,6 +82,54 @@ export type AtomOptions<
    * doesn't exist on the server; the built-in adapter no-ops there.
    */
   persist?: PersistOption<Value>;
+
+  /**
+   * When the persisted value is read from the adapter.
+   *
+   * - `"immediate"` (default for `createAtom`) reads it while the atom is
+   *   created and applies it via `silentUpdate`.
+   * - `"deferred"` (default for `atom()` in `@mongez/react-atom`) skips the
+   *   read at creation. Nothing is read until `atom.hydratePersisted()` runs,
+   *   which React atoms do after mount, so the first client render matches
+   *   the server render. The stored value is then applied with `update`, so
+   *   subscribers re-render. An update or reset that happens before the
+   *   hydration wins, and the stored value is not applied over it.
+   */
+  persistHydration?: PersistHydration;
+
+  /**
+   * Insert the atom into the module-level `atoms` registry. Defaults to
+   * `true`. Pass `false` for per-instance ("local") atoms so they stay out
+   * of the global registry and are never shared through `getAtom(key)`.
+   * Use a unique `key` per instance: events still travel on the shared
+   * `atoms.<key>.*` bus.
+   */
+  register?: boolean;
+};
+
+/**
+ * See {@link AtomOptions.persistHydration}.
+ */
+export type PersistHydration = "immediate" | "deferred";
+
+/**
+ * Options accepted by `atom.clone()`.
+ */
+export type CloneAtomOptions = {
+  /**
+   * Insert the clone into the global `atoms` registry. Defaults to `true`.
+   */
+  register?: boolean;
+
+  /**
+   * Which value the clone starts from.
+   *
+   * - `"current"` (default) copies the atom's current value.
+   * - `"default"` copies its default value, ignoring any updates made to the
+   *   source atom. `AtomStore` uses this so a write to a module-level
+   *   template can never leak into a request-scoped store.
+   */
+  seed?: "current" | "default";
 };
 
 export type AtomChangeCallback<Value, Actions extends AtomActions<Value>> = (
@@ -198,10 +247,21 @@ export type BaseAtom<
    * but owns its own state.
    *
    * Pass `{ register: false }` to skip insertion into the global `atoms`
-   * registry. Used internally by `AtomStore` to create isolated per-store
-   * clones for SSR.
+   * registry and `{ seed: "default" }` to start from the default value
+   * instead of the current one. `AtomStore` uses both to create isolated
+   * per-store clones for SSR.
    */
-  clone: (options?: { register?: boolean }) => Atom<Value, Actions>;
+  clone: (options?: CloneAtomOptions) => Atom<Value, Actions>;
+
+  /**
+   * Read the persisted value from the `persist` adapter and apply it.
+   *
+   * A no-op when the atom has no adapter, when it was already hydrated, or
+   * when the atom was updated or reset first. With
+   * `persistHydration: "immediate"` the read has already happened at
+   * creation, so this does nothing.
+   */
+  hydratePersisted: () => void | Promise<void>;
 
   /**
    * Get the atom's value type

@@ -16,7 +16,8 @@ An atom is a value with action methods bound to it: call domain verbs (`cart.pus
 ## Conventions and pitfalls
 - Some topics come in pairs (`derived`/`derived-atoms`, `persistence`/`persist`, `stores`/`atom-store`); they cover the same ground, so read one.
 - Atoms are registered by key. Reusing a key overwrites the registry entry of the existing atom, so keep keys unique.
-- Module-level atoms are shared across requests on the server. Use an `AtomStore` for anything request-specific.
-- The built-in `localStorageAdapter` (`persist: true`) uses `window.localStorage` only, so it does nothing on the server; use a custom adapter (cookie) when the server needs the value.
+- Module-level atoms are shared across requests on the server. Use an `AtomStore` for anything request-specific. A store clone starts from the template's default value, never from its current value.
+- `atom({ register: false })` makes a local atom that stays out of the global registry; give each instance a unique key.
+- The built-in `localStorageAdapter` (`persist: true`) uses `window.localStorage` only, so it does nothing on the server; use a custom adapter (cookie) when the server needs the value. Set `persistHydration: "deferred"` so the stored value is applied after hydration instead of at creation.
 - Prefer named actions over mutating `atom.value` from outside.
 - Using atoms in components? Switch to @mongez/react-atom, whose `atom` and `atomCollection` come with hooks attached.

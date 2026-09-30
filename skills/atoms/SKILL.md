@@ -23,6 +23,8 @@ type AtomOptions<V, A> = {
   onUpdate?: (callback: AtomChangeCallback<V, A>) => EventSubscription;
   get?: (key: string, defaultValue?: V, atomValue?: V) => V;
   persist?: PersistOption<V>;
+  persistHydration?: "immediate" | "deferred";  // when the stored value is read; default "immediate"
+  register?: boolean;                          // false = local atom, kept out of the global registry
 };
 ```
 
@@ -40,8 +42,9 @@ type AtomOptions<V, A> = {
 | `atom.silentReset()` | Restore default without emitting update; still emits reset. |
 | `atom.onChange(cb)` | Subscribe to updates. Returns `{ unsubscribe }`. |
 | `atom.onReset(cb)` / `atom.onDestroy(cb)` | Specific lifecycle hooks. |
-| `atom.clone({ register?: boolean })` | Deep-clone into a new atom with key `${key}.clone.{n}`. Pass `register: false` to skip the global registry — used internally by `AtomStore`. |
-| `atom.destroy()` | Remove from the registry, unsubscribe namespace events. |
+| `atom.clone({ register?, seed? })` | Deep-clone into a new atom with key `${key}.clone.{n}`. Pass `register: false` to skip the global registry and `seed: "default"` to start from the default value instead of the current one — both used by `AtomStore`. |
+| `atom.hydratePersisted()` | Read the `persist` adapter once and apply the stored value (needed with `persistHydration: "deferred"`). |
+| `atom.destroy()` | Remove from the registry, unsubscribe this atom's own `update` / `reset` / `delete` topics (its clones keep theirs). |
 | `atom.type` | `"object" \| "array" \| typeof primitive` — set at construction time. |
 | `atom.length` | When the value is an array/string. |
 

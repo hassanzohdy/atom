@@ -11,11 +11,58 @@ import {
   AtomOptions,
   AtomPartialChangeCallback,
   AtomValue,
+  CloneAtomOptions,
 } from "./types";
 
 export const atoms: Record<string, Atom<any>> = {};
 
 let cloneCounter = 0;
+
+/**
+ * The event topics every atom publishes on, one per lifecycle moment.
+ */
+const ATOM_EVENT_TYPES = ["update", "reset", "delete"] as const;
+
+/**
+ * Maps every clone to the atom it was cloned from (always the ROOT template,
+ * never another clone). `AtomStore.use()` reads this so that passing an atom
+ * that is already a scoped clone resolves to that store's clone of the
+ * template instead of cloning the clone.
+ */
+const cloneOrigins = new WeakMap<object, Atom<any>>();
+
+/**
+ * Atoms created with `register: false` that are NOT store clones, i.e. atoms
+ * the caller owns and scopes by hand (per-component-instance state).
+ * Store-aware code (`useAtom`, `AtomStore.use`) leaves these untouched.
+ */
+const localAtoms = new WeakSet<object>();
+
+/**
+ * Get the template a clone was made from, or `undefined` when the atom is
+ * not a clone.
+ */
+export function getAtomOrigin<V = any>(
+  atom: Atom<V, any>
+): Atom<V> | undefined {
+  return cloneOrigins.get(atom) as Atom<V> | undefined;
+}
+
+/**
+ * True for atoms created with `register: false` that are not store clones
+ * (see {@link CreateAtomOptions.register}). These live outside the global
+ * registry and outside any `AtomStore`.
+ */
+export function isLocalAtom(atom: Atom<any, any>): boolean {
+  return localAtoms.has(atom);
+}
+
+/**
+ * True when `value` is a container the keyed watchers can read into.
+ */
+function isContainer(value: unknown): boolean {
+  return value !== null && typeof value === "object";
+}
 
 /**
  * Get atom by name
@@ -34,9 +81,19 @@ export type CreateAtomOptions = {
    * `atoms` registry. Used by `AtomStore` to create per-store clones that
    * stay isolated from the global lookup table.
    *
-   * Defaults to true.
+   * Defaults to `data.register`, then to true.
+   *
+   * An atom created with `register: false` that is not a store clone is a
+   * "local" atom (see {@link isLocalAtom}). Its events still travel on the
+   * shared `atoms.<key>.*` bus, so give every local atom a unique key.
    */
   register?: boolean;
+
+  /**
+   * Internal: set by `atom.clone()` to record the template this atom was
+   * cloned from. Not meant to be passed by application code.
+   */
+  origin?: Atom<any, any>;
 };
 
 /**
@@ -52,11 +109,8 @@ export function createAtom<
   let defaultValue = data.default;
   let atomValue = data.default;
 
-  let atomValueIsObject = false;
-
   if (defaultValue && typeof defaultValue === "object") {
     atomValue = defaultValue = clone(defaultValue);
-    atomValueIsObject = true;
   }
 
   const atomType = Array.isArray(defaultValue) ? "array" : typeof defaultValue;
@@ -144,7 +198,10 @@ export function createAtom<
 
       this.currentValue = updatedValue;
       events.trigger(event("update"), this.currentValue, oldValue, this);
-      if (atomValueIsObject) {
+      // Object-ness is decided per update, not once from the default: an atom
+      // declared with `default: null` that later holds an object (or goes
+      // back to null) must still notify its keyed watchers.
+      if (isContainer(updatedValue) || isContainer(oldValue)) {
         for (const key in watchers) {
           const keyOldValue = get(oldValue, key);
           const keyNewValue = get(updatedValue, key);
@@ -208,8 +265,18 @@ export function createAtom<
     destroy() {
       events.trigger(event("delete"), this);
 
-      events.unsubscribeNamespace(atomEvent);
-      delete atoms[this.key];
+      // Drop only THIS atom's own topics. `unsubscribeNamespace(atomEvent)`
+      // also matches `atoms.<key>.clone.<n>.*`, so destroying a template
+      // would silently unsubscribe every clone of it.
+      for (const type of ATOM_EVENT_TYPES) {
+        events.unsubscribe(event(type));
+      }
+
+      // A `register: false` atom may share its key with a registered one;
+      // only remove the registry entry when it really is this atom.
+      if (atoms[atomKey] === atom) {
+        delete atoms[atomKey];
+      }
     },
     onDestroy(callback: (atom: Atom<Value>) => void): EventSubscription {
       return events.subscribe(`atoms.${this.key}.delete`, callback);
@@ -226,17 +293,27 @@ export function createAtom<
       this.currentValue = clone(this.defaultValue);
       events.trigger(event("reset"), this);
     },
-    clone(cloneOptions?: CreateAtomOptions) {
+    hydratePersisted() {
+      // Replaced by `attachPersist` when the atom has a persist adapter.
+    },
+    clone(cloneOptions?: CloneAtomOptions) {
+      const seedFromDefault = cloneOptions?.seed === "default";
+
       return createAtom(
         {
-          key: this.key + ".clone." + (++cloneCounter),
-          default: clone(this.currentValue),
+          key: this.key + ".clone." + ++cloneCounter,
+          default: clone(
+            seedFromDefault ? this.defaultValue : this.currentValue
+          ),
           beforeUpdate: data.beforeUpdate,
           get: data.get,
           onUpdate: data.onUpdate,
           actions: data.actions,
         },
-        { register: cloneOptions?.register ?? true }
+        {
+          register: cloneOptions?.register ?? true,
+          origin: cloneOrigins.get(this) ?? this,
+        }
       );
     },
   } as any;
@@ -275,16 +352,31 @@ export function createAtom<
     events.subscribe(event("update"), data.onUpdate.bind(atom));
   }
 
-  if (options.register !== false) {
+  const shouldRegister = options.register ?? data.register ?? true;
+
+  if (options.origin) {
+    cloneOrigins.set(atom, options.origin);
+  } else if (!shouldRegister) {
+    localAtoms.add(atom);
+  }
+
+  if (shouldRegister) {
     atoms[atomKey] = atom;
   }
 
   // Persistence wiring. Resolve the adapter (boolean → built-in
   // localStorage, object → as-is, falsy → skip). The adapter handles
   // the initial read and the write-through; we just hand it the atom.
+  // With `persistHydration: "deferred"` the initial read waits for
+  // `atom.hydratePersisted()` (React atoms call it after mount).
   const adapter = resolvePersistAdapter(data.persist);
   if (adapter) {
-    attachPersist(atom, adapter, data);
+    atom.hydratePersisted = attachPersist(
+      atom,
+      adapter,
+      data,
+      data.persistHydration ?? "immediate"
+    );
   }
 
   return atom;

@@ -82,8 +82,8 @@ describe("atomCollection", () => {
 
   it("length reflects current value", () => {
     const list = atomCollection<number>({ key: "coll.len", default: [1, 2, 3] });
-    expect((list as any).length).toBe(3);
+    expect(list.length).toBe(3);
     (list as any).push(4);
-    expect((list as any).length).toBe(4);
+    expect(list.length).toBe(4);
   });
 });

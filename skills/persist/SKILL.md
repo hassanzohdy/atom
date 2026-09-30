@@ -26,6 +26,7 @@ persist?: PersistOption<V>;
 - `persist: true` → use the built-in `localStorageAdapter`. JSON-encodes values, no-ops on the server (`typeof window === "undefined"`).
 - `persist: false | undefined` → no persistence.
 - `persist: { get, set, remove }` → any custom adapter. Sync or async; the engine handles both.
+- `persistHydration: "immediate" | "deferred"` → when the adapter is read. Default `"immediate"` (at creation). `"deferred"` waits for `atom.hydratePersisted()`, which reads once and applies the value with `update()`. An update or reset before it wins. Use it whenever the atom renders during SSR: `@mongez/react-atom`'s `atom()` defaults to it and hydrates after mount.
 
 ## Behavior
 

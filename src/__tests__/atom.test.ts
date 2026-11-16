@@ -296,3 +296,21 @@ describe("clone()", () => {
     expect(getAtom(a.key)).toBe(a);
   });
 });
+
+describe("registry — prototype-sensitive keys", () => {
+  it("registers and looks up `__proto__` and `constructor` as ordinary keys", () => {
+    const a = fresh("__proto__", 1);
+    const b = fresh("constructor", 2);
+
+    expect(getAtom("__proto__")).toBe(a);
+    expect(getAtom("constructor")).toBe(b);
+    expect(Object.keys(atoms)).toEqual(expect.arrayContaining(["__proto__", "constructor"]));
+    expect(Object.getPrototypeOf(atoms)).toBeNull();
+    expect(({} as any).value).toBeUndefined();
+  });
+
+  it("does not resolve inherited names that were never registered", () => {
+    expect(getAtom("constructor")).toBeUndefined();
+    expect(getAtom("toString")).toBeUndefined();
+  });
+});

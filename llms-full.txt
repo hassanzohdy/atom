@@ -234,7 +234,7 @@ Connects to `window.__REDUX_DEVTOOLS_EXTENSION__`. No-op when the extension isn'
 - `getAtom(key)` → `Atom | undefined`
 - `atomsList()` → `Atom[]`
 - `atomsObject()` → `Record<string, Atom>`
-- `atoms` → the underlying registry (rarely used directly)
+- `atoms` → the underlying registry (rarely used directly). It is a null-prototype object, so keys like `__proto__` and `constructor` register and resolve like any other key, and `getAtom("toString")` / `getAtom("constructor")` (inherited names) return `undefined`.
 
 ## Lifecycle events
 

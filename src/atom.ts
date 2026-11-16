@@ -14,7 +14,11 @@ import {
   CloneAtomOptions,
 } from "./types";
 
-export const atoms: Record<string, Atom<any>> = {};
+/**
+ * The global registry. A null-prototype object, so keys such as `__proto__`
+ * and `constructor` are ordinary entries instead of reaching `Object.prototype`.
+ */
+export const atoms: Record<string, Atom<any>> = Object.create(null);
 
 let cloneCounter = 0;
 

@@ -83,7 +83,7 @@ Atoms aren't just values — they're values with verbs bound to them. Call domai
 
 ## Mental model
 
-All atoms live in a module-level registry (`atoms` object exported from the package). Each atom is keyed by the `key` string passed to `createAtom`. Keys should be namespaced with dots: `"ui.sidebar"`, `"cart"`, `"user.profile"`.
+All atoms live in a module-level registry (`atoms` object exported from the package). It has no prototype, so keys like `__proto__` and `constructor` are ordinary atom keys. Each atom is keyed by the `key` string passed to `createAtom`. Keys should be namespaced with dots: `"ui.sidebar"`, `"cart"`, `"user.profile"`.
 
 ```ts
 sidebarAtom.toggle();     // not: setSidebar(!sidebar.value)

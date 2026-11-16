@@ -480,7 +480,7 @@ const localeAtom = createAtom({
 
 ## SSR isolation — `AtomStore`
 
-The module-level `atoms` registry is shared per Node process. In SSR, two concurrent requests would write to the same atoms. `AtomStore` gives each request its own scoped clones — the template atoms are never mutated.
+The module-level `atoms` registry is shared per Node process. The registry is a null-prototype object, so keys like `__proto__` and `constructor` are ordinary atom keys. In SSR, two concurrent requests would write to the same atoms. `AtomStore` gives each request its own scoped clones — the template atoms are never mutated.
 
 ```ts
 import { createAtomStore } from "@mongez/atom";

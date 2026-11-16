@@ -1,5 +1,16 @@
 # Changelog — @mongez/atom
 
+## [7.0.1] — 2026-11-16
+
+### Fixed
+
+- The atom registry is a null-prototype object, so atoms keyed `__proto__` or `constructor` register and resolve like any other key.
+
+### Changed
+
+- `getAtom("toString")`, `getAtom("constructor")` and other inherited names return `undefined` instead of `Object.prototype` members.
+- `atoms` and `atomsObject()` no longer inherit `Object.prototype` methods: call `Object.hasOwn(atoms, key)` or `key in atoms` instead of `atoms.hasOwnProperty(key)`, and avoid `String(atoms)`. `Object.keys`, `Object.values`, `Object.entries`, `for…in` and `JSON.stringify` work as before.
+
 ## [7.0.0] — 2026-09-30
 
 SSR/CSR correctness fixes. `@mongez/atom` itself stays backward compatible (new options default to the old behavior); the major bump keeps it in lockstep with `@mongez/react-atom` 7, which opts into the new options and carries the breaking changes.

@@ -37,7 +37,7 @@ Every export ships from the package root.
 
 ## Quick rules
 
-1. Atoms are created with `createAtom({ key, default, actions? })`. The `key` is the unique identifier — duplicates overwrite.
+1. Atoms are created with `createAtom({ key, default, actions? })`. The `key` is the unique identifier — duplicates overwrite. The registry is a null-prototype object, so keys like `__proto__` / `constructor` are ordinary keys and `getAtom("toString")` returns `undefined`.
 2. Module-level singletons are fine for client-only apps. For SSR, wrap consumers in an `AtomStore` so request A and request B don't share state.
 3. `change` / `merge` / `silentChange` / `watch(key)` / `get(key)` only typecheck when the atom's value is an object.
 4. `update` triggers events; `silentUpdate` does not. Use silent variants for hydration and time-travel.
